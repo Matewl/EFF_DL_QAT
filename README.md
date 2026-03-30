@@ -8,6 +8,7 @@
 [ef_models.pdf](ef_models.pdf)
 
 #### Структура проекта
+```
 ├── ef_models.pdf
 ├── ESPCN
 │   ├── __init__.py
@@ -18,6 +19,7 @@
 │   ├── quantization.py
 │   └── utils.py
 └── README.md
+```
 
 #### Участники проекта
 **Лузанин Матвей** - @luzaninmatvey \
