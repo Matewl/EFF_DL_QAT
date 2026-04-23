@@ -41,22 +41,32 @@ class APoTQuantizer(FakeQuantizer):
         self.levels = self._build_levels()
 
     def _build_levels(self) -> Tensor:
-        """Build quantization levels using APoT additive decomposition."""
-        levels_set = {0.0}
-        total_bits = self.bits
-        # Precompute all possible combinations via bitmask
-        for code in range(1, 2**total_bits):
-            value = 0.0
-            for i in range(total_bits):
-                if code & (1 << i):
-                    # Group index and position within group
-                    group = i // self.k
-                    pos_in_group = i % self.k
-                    exponent = -(group * self.k + pos_in_group + 1)
-                    value += 2.0 ** exponent
-            levels_set.add(value)
+        """Build quantization levels using APoT additive decomposition.
+
+        Each group j picks exactly ONE value from {0, 2^{-(j*k+1)}, ..., 2^{-(j*k+k)}}.
+        The total level = sum of one choice per group (cross-product of m groups).
+        This produces (k+1)^m non-uniformly spaced levels denser near zero,
+        which is the key property of APoT vs. uniform quantization.
+
+        Note: the number of levels is (k+1)^m, NOT 2^bits. E.g., m=2, k=2 → 9 levels.
+        The `bits = m*k` parameter controls the bit-budget for storing the code,
+        not the number of distinct quantization levels.
+        """
+        from itertools import product as iterproduct
+
+        # Each group j: k+1 choices — 0 or one of k powers of two at group scale
+        group_sets = []
+        for j in range(self.m):
+            vals = [0.0] + [2.0 ** (-(j * self.k + i + 1)) for i in range(self.k)]
+            group_sets.append(vals)
+
+        # Cross-product: one value per group, total = their sum
+        levels_set = set()
+        for combo in iterproduct(*group_sets):
+            levels_set.add(round(sum(combo), 12))
+
         levels = sorted(levels_set)
-        return torch.tensor(levels, dtype=torch.float32)  # shape: [L]
+        return torch.tensor(levels, dtype=torch.float32)  # shape: [(k+1)^m]
 
     def initialize_from_tensor(self, tensor: Tensor) -> None:
         if bool(self.initialized):

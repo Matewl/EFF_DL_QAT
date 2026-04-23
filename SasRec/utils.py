@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
+import os
 import logging
 import random
 import warnings
 from collections.abc import Mapping
-import os
-from dataclasses import dataclass
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -86,20 +85,6 @@ def load_config(config_path: str | Path) -> Dict[str, Any]:
     return config
 
 
-# ESPCN_METHOD_CONFIGS: Dict[str, Tuple[str, str]] = {
-#     "fp32": ("configs/espcn/espcn_fp32.yaml", "espcn_fp32.pth"),
-#     "lsq": ("configs/espcn/espcn_lsq.yaml", "espcn_lsq.pth"),
-#     "apot": ("configs/espcn/espcn_apot.yaml", "espcn_apot.pth"),
-#     "qdrop": ("configs/espcn/espcn_qdrop.yaml", "espcn_qdrop.pth"),
-#     "adaround": ("configs/espcn/espcn_adaround.yaml", "espcn_adaround.pth"),
-# }
-
-
-# def get_espcn_method_configs() -> Dict[str, Tuple[str, str]]:
-#     """Return mapping of ESPCN method -> (config path, checkpoint filename)."""
-#     return ESPCN_METHOD_CONFIGS.copy()
-
-
 def ensure_dir(path: str | Path, create: bool = True) -> Path:
     """Ensure a directory exists and return it as ``Path``."""
     path_obj = Path(path)
@@ -107,13 +92,6 @@ def ensure_dir(path: str | Path, create: bool = True) -> Path:
         path_obj.mkdir(parents=True, exist_ok=True)
     return path_obj
 
-
-# def save_json(data: Mapping[str, Any], path: str | Path) -> None:
-#     """Serialize ``data`` to JSON with UTF-8 encoding."""
-#     path_obj = Path(path)
-#     ensure_dir(path_obj.parent)
-#     with path_obj.open("w", encoding="utf-8") as handle:
-#         json.dump(data, handle, indent=2, sort_keys=True)
 
 
 def set_random_seeds(seed: int, deterministic: bool = True) -> None:
@@ -125,59 +103,6 @@ def set_random_seeds(seed: int, deterministic: bool = True) -> None:
     if deterministic:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-
-
-# def count_parameters(model: torch.nn.Module) -> Tuple[int, int]:
-#     """Return the number of total and trainable parameters."""
-#     total = sum(p.numel() for p in model.parameters())
-#     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-#     return total, trainable
-
-
-# def move_batch_to_device(batch: Mapping[str, Any], device: torch.device) -> Dict[str, Any]:
-#     """Move a batch of tensors to ``device``."""
-#     moved = {}
-#     for key, value in batch.items():
-#         if torch.is_tensor(value):
-#             moved[key] = value.to(device)
-#         elif isinstance(value, Mapping):
-#             moved[key] = move_batch_to_device(value, device)
-#         else:
-#             moved[key] = value
-#     return moved
-
-
-# def gather_quantizable_layers(
-#     model: torch.nn.Module,
-#     quantize_embedding: bool = False,
-#     quantize_conv2d: bool = True,
-#     quantize_conv1d: bool = True,
-# ) -> List[Tuple[str, torch.nn.Module]]:
-#     """Return a list of (qualified_name, module) pairs for modules to quantize."""
-#     from torch import nn
-
-#     target_types = [nn.Linear]
-#     if quantize_embedding:
-#         target_types.append(nn.Embedding)
-#     if quantize_conv2d:
-#         target_types.append(nn.Conv2d)
-#     if quantize_conv1d:
-#         target_types.append(nn.Conv1d)
-
-#     matches: List[Tuple[str, torch.nn.Module]] = []
-#     for name, module in model.named_modules():
-#         if isinstance(module, tuple(target_types)):
-#             matches.append((name, module))
-#     return matches
-
-
-# def replace_module(root: torch.nn.Module, name: str, new_module: torch.nn.Module) -> None:
-#     """Replace a child module referenced by ``name`` with ``new_module``."""
-#     components = name.split(".")
-#     parent = root
-#     for comp in components[:-1]:
-#         parent = getattr(parent, comp)
-#     setattr(parent, components[-1], new_module)
 
 
 def init_clearml_task(logging_cfg: Mapping[str, Any], full_config: Mapping[str, Any]):
@@ -222,37 +147,6 @@ def init_clearml_task(logging_cfg: Mapping[str, Any], full_config: Mapping[str, 
         except Exception:
             pass
     return task
-
-
-# @dataclass
-# class RunningAverage:
-#     """Track a scalar metric over time."""
-
-#     value: float = 0.0
-#     sum: float = 0.0
-#     count: int = 0
-
-#     def update(self, val: float, n: int = 1) -> None:
-#         self.sum += val * n
-#         self.count += n
-#         self.value = self.sum / max(self.count, 1)
-
-
-# def detach_tensors(batch: Mapping[str, Any]) -> Dict[str, Any]:
-#     """Detach tensors to avoid holding computation graphs when logging."""
-#     detached: Dict[str, Any] = {}
-#     for key, value in batch.items():
-#         if torch.is_tensor(value):
-#             detached[key] = value.detach().cpu()
-#         elif isinstance(value, Mapping):
-#             detached[key] = detach_tensors(value)
-#         elif isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
-#             detached[key] = [
-#                 item.detach().cpu() if torch.is_tensor(item) else item for item in value
-#             ]
-#         else:
-#             detached[key] = value
-#     return detached
 
 
 def ndcg_k(actual, predicted, k=10):

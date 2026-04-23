@@ -147,7 +147,8 @@ class UniformAffineQuantizer(FakeQuantizer):
         return scale.to(device), zero_point.to(device)
 
     def _forward_impl(self, tensor: Tensor) -> Tensor:
-        self.update_ranges(tensor.detach())
+        if self.training:
+            self.update_ranges(tensor.detach())
         scale, zero_point = self._calc_qparams()
         value = tensor / scale + zero_point
         q = torch.clamp(torch.round(value), self.qmin, self.qmax)
