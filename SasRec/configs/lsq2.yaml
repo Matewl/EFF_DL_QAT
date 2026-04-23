@@ -1,0 +1,14 @@
+base_config: base.yaml
+
+experiment:
+  run_name: sasrec_lsq
+
+quantization:
+  method: lsq
+  bits: 8
+  activation_bits: 8
+  per_channel: true
+  activation_per_channel: false
+  symmetric: true
+  activation_symmetric: false
+  alpha_init: 1.5
