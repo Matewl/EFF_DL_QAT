@@ -1,0 +1,57 @@
+[
+  {
+    "model": "sasrec_fp32",
+    "quant_method": "fp32",
+    "ndcg": 0.012795840739763517,
+    "hit": 0.027317880794701987,
+    "throughput_samples_per_sec": 12.98465284780043,
+    "avg_latency_ms": 77.01399580885966,
+    "median_latency_ms": 98.3359010424465,
+    "checkpoint_path": "checkpoints/sasrec_runs/sasrec_fp32/sasrec_fp32.pth",
+    "model_size_mb": 3.5447912216186523
+  },
+  {
+    "model": "sasrec_lsq",
+    "quant_method": "lsq",
+    "ndcg": 0.0029781590975277443,
+    "hit": 0.005463576158940398,
+    "throughput_samples_per_sec": 12.314025766843795,
+    "avg_latency_ms": 81.2082107780346,
+    "median_latency_ms": 98.61486055888236,
+    "checkpoint_path": "checkpoints/sasrec_runs/sasrec_lsq/sasrec_lsq.pth",
+    "model_size_mb": 3.5724496841430664
+  },
+  {
+    "model": "sasrec_apot",
+    "quant_method": "apot",
+    "ndcg": 0.008782021014224012,
+    "hit": 0.019205298013245033,
+    "throughput_samples_per_sec": 14.122610501665957,
+    "avg_latency_ms": 70.80843870062381,
+    "median_latency_ms": 97.99463744275272,
+    "checkpoint_path": "checkpoints/sasrec_runs/sasrec_apot/sasrec_apot.pth",
+    "model_size_mb": 3.55332088470459
+  },
+  {
+    "model": "sasrec_qdrop",
+    "quant_method": "qdrop",
+    "ndcg": 0.013222037006702906,
+    "hit": 0.028145695364238412,
+    "throughput_samples_per_sec": 13.34977253832791,
+    "avg_latency_ms": 74.90764334215783,
+    "median_latency_ms": 98.22627995163202,
+    "checkpoint_path": "checkpoints/sasrec_runs/sasrec_qdrop/sasrec_qdrop.pth",
+    "model_size_mb": 3.5567140579223633
+  },
+  {
+    "model": "sasrec_adaround",
+    "quant_method": "adaround",
+    "ndcg": 0.01235224178991025,
+    "hit": 0.02682119205298013,
+    "throughput_samples_per_sec": 14.522866472884072,
+    "avg_latency_ms": 68.8569299915495,
+    "median_latency_ms": 98.01034000702202,
+    "checkpoint_path": "checkpoints/sasrec_runs/sasrec_adaround/sasrec_adaround.pth",
+    "model_size_mb": 1.3817129135131836
+  }
+]
