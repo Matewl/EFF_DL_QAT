@@ -1,6 +1,6 @@
 experiment:
   seed: 42
-  device: mps 
+  device: cuda
   deterministic: true
 
 model:

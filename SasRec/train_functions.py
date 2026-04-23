@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import json
 import os
 from pathlib import Path
@@ -13,14 +12,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from data.dataloader import create_dataloaders
-from models.quantization import QuantSASRec
 from utils import (
-    configure_logging,
-    load_config,
-    set_random_seeds,
-    init_clearml_task,
-    ensure_dir,
     ndcg_k,
     hit_k
 )
@@ -48,7 +40,9 @@ def save_checkpoint(
 ):
     """Save model checkpoint."""
     os.makedirs(checkpoint_dir, exist_ok=True)
+    os.makedirs(checkpoint_dir+"__weights", exist_ok=True)
     path = os.path.join(checkpoint_dir, filename)
+    path_weights_only = os.path.join(checkpoint_dir+"__weights", filename)
     state = {
         "epoch": epoch,
         "model_state_dict": model.state_dict(),
@@ -351,7 +345,7 @@ def train_qat(
     ckpt_path = os.path.join(checkpoint_dir, save_name)
     if os.path.exists(ckpt_path):
         print(f"Loading best QAT checkpoint from {ckpt_path} for final testing...")
-        ckpt = torch.load(ckpt_path, map_location=args.device)
+        ckpt = torch.load(ckpt_path, map_location=args.device, weights_only=False)
         model.load_state_dict(ckpt["model_state_dict"])
 
     print("Running final test evaluation (user_test split)...")
@@ -384,13 +378,12 @@ def apply_adaround(
 ):
     """Apply AdaRound PTQ."""
     print("Starting AdaRound PTQ...")
-    
-    fp32_path = os.path.join(checkpoint_dir, fp32_checkpoint)
+    fp32_path = os.path.join('./', fp32_checkpoint)
     if not os.path.exists(fp32_path):
         raise FileNotFoundError(f"FP32 checkpoint not found: {fp32_path}")
         
     print(f"Loading FP32 checkpoint: {fp32_checkpoint}")
-    ckpt = torch.load(fp32_path, map_location=args.device)
+    ckpt = torch.load(fp32_path, map_location=args.device, weights_only=False)
     model.load_state_dict(ckpt["model_state_dict"], strict=False)
     
     model.prepare_quant("adaround", adaround_config)
@@ -424,121 +417,3 @@ def apply_adaround(
         },
     )
     print(f"AdaRound done. Model saved as {save_name}")
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Train SASRec with quantization.")
-    parser.add_argument("--config", type=str, required=True, help="Path to config file")
-    args_cli = parser.parse_args()
-    
-    configure_logging()
-    config = load_config(args_cli.config)
-    set_random_seeds(config["experiment"].get("seed", 42))
-    
-    print(f"Experiment: {config['experiment']}")
-    
-    args = Args(config)
-    
-    print("Loading data...")
-    train_loader, val_loader, test_loader, dataset = create_dataloaders(
-        config, seed=config["experiment"].get("seed", 42)
-    )
-    [user_train, user_valid, user_test, usernum, itemnum] = dataset
-    
-    print("Building model...")
-    model = QuantSASRec(usernum, itemnum, args).to(args.device)
-    
-    quant_cfg = config.get("quantization", {})
-    strategy_name = quant_cfg.get("method", "fp32").lower()
-    
-    checkpoint_dir = Path(config.get("paths", {}).get("checkpoints_dir", "./checkpoints"))
-    run_name = config["experiment"].get("run_name", "sasrec_run")
-    checkpoint_subdir = checkpoint_dir / run_name
-    ensure_dir(checkpoint_subdir)
-    
-    results_dir = Path(config.get("paths", {}).get("results_dir", "./results"))
-    ensure_dir(results_dir)
-    
-    logging_cfg = config.get("logging", {})
-    clearml_task = init_clearml_task(logging_cfg, config)
-    logger = clearml_task.get_logger() if clearml_task else None
-    
-    criterion = nn.BCEWithLogitsLoss()
-    
-    if strategy_name == "fp32":
-        train_fp32(
-            model=model,
-            train_loader=train_loader,
-            dataset=dataset,
-            config=config,
-            criterion=criterion,
-            args=args,
-            checkpoint_dir=str(checkpoint_subdir),
-            save_name="sasrec_fp32.pth",
-            logger=logger
-        )
-        
-    elif strategy_name in ("lsq", "apot", "qdrop"):
-        train_qat(
-            model=model,
-            train_loader=train_loader,
-            dataset=dataset,
-            config=config,
-            criterion=criterion,
-            args=args,
-            strategy_name=strategy_name,
-            quant_config=quant_cfg,
-            checkpoint_dir=str(checkpoint_subdir),
-            save_name=f"sasrec_{strategy_name}.pth",
-            logger=logger
-        )
-        
-    elif strategy_name == "adaround":
-        fp32_epochs = config["training"].get("fp32_epochs", 0)
-        fp32_ckpt = quant_cfg.get("base_checkpoint", None)
-        
-        fp32_ckpt_name = "sasrec_fp32_for_adaround.pth"
-        
-        if fp32_epochs > 0:
-             train_fp32(
-                model=model,
-                train_loader=train_loader,
-                dataset=dataset,
-                config=config,
-                criterion=criterion,
-                args=args,
-                checkpoint_dir=str(checkpoint_subdir),
-                save_name=fp32_ckpt_name,
-                logger=logger
-            )
-        elif fp32_ckpt:
-             fp32_ckpt_path = Path(fp32_ckpt)
-             if not fp32_ckpt_path.exists():
-                 fp32_ckpt_path = checkpoint_subdir / fp32_ckpt
-             
-             if not fp32_ckpt_path.exists():
-                  raise FileNotFoundError(f"Base checkpoint not found: {fp32_ckpt}")
-             if fp32_ckpt_path.parent == checkpoint_subdir:
-                 fp32_ckpt_name = fp32_ckpt_path.name
-             else:
-                 fp32_ckpt_name = str(fp32_ckpt_path)
-
-        else:
-             raise ValueError("AdaRound requires either fp32_epochs > 0 or base_checkpoint.")
-        
-        apply_adaround(
-            model=model,
-            train_loader=train_loader,
-            dataset=dataset,
-            args=args,
-            fp32_checkpoint=fp32_ckpt_name,
-            adaround_config=quant_cfg,
-            checkpoint_dir=str(checkpoint_subdir),
-            save_name="sasrec_adaround.pth",
-            logger=logger
-        )
-    else:
-        raise ValueError(f"Unknown strategy: {strategy_name}")
-
-if __name__ == "__main__":
-    main()
