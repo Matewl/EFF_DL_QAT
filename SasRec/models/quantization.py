@@ -33,12 +33,8 @@ class QuantMultiheadAttention(nn.Module):
         tgt_len, bsz, embed_dim = query.size()
         src_len = key.size(0)
 
-        if query is key and key is value:
-             qkv = self.in_proj(query)
-             q, k, v = qkv.chunk(3, dim=-1)
-        else:
-             qkv = self.in_proj(query)
-             q, k, v = qkv.chunk(3, dim=-1)
+        qkv = self.in_proj(query)
+        q, k, v = qkv.chunk(3, dim=-1)
 
         q = q.contiguous().view(tgt_len, bsz, self.num_heads, self.head_dim).permute(1, 2, 0, 3)
         k = k.contiguous().view(src_len, bsz, self.num_heads, self.head_dim).permute(1, 2, 0, 3)
@@ -48,9 +44,13 @@ class QuantMultiheadAttention(nn.Module):
         
         if attn_mask is not None:
              if attn_mask.dim() == 2:
-                 attn_output_weights += attn_mask.unsqueeze(0).unsqueeze(0)
+                 attn_output_weights = attn_output_weights.masked_fill(
+                     attn_mask.unsqueeze(0).unsqueeze(0), float('-inf')
+                 )
              else:
-                 attn_output_weights += attn_mask
+                 attn_output_weights = attn_output_weights.masked_fill(
+                     attn_mask, float('-inf')
+                 )
 
         if key_padding_mask is not None:
              attn_output_weights = attn_output_weights.masked_fill(
