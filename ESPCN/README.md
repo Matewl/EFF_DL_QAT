@@ -1,32 +1,33 @@
-# EFF DL QAT
+# ESPCN
 
-Репозиторий с экспериментами по квантизации нейросетевых моделей. Текущая рабочая часть проекта посвящена модели **ESPCN** для single image super-resolution и сравнению качества/скорости разных вариантов квантизации.
+Текущая рабочая часть проекта посвящена модели **ESPCN** для single image super-resolution и сравнению качества/скорости разных вариантов квантизации.
 
 Основной код находится в [`ESPCN`](ESPCN):
 
-- [`model.py`](ESPCN/model.py) - базовая ESPCN-модель.
-- [`dataset.py`](ESPCN/dataset.py) - датасеты DIV2K, Set5 и Set14.
-- [`train.py`](ESPCN/train.py) - CLI для обучения, тестирования и запуска квантизационных экспериментов.
-- [`quantizations`](ESPCN/quantizations) - реализации PACT, LSQ, APoT, AdaRound и QDrop.
-- [`int8_convertation.py`](ESPCN/int8_convertation.py) - утилиты для конвертации PACT-модели в real INT8 и CPU-бенчмарка.
+- [`model.py`](model.py) - базовая ESPCN-модель.
+- [`dataset.py`](dataset.py) - датасеты DIV2K, Set5 и Set14.
+- [`train.py`](train.py) - CLI для обучения, тестирования и запуска квантизационных экспериментов.
+- [`quantizations`](quantizations) - реализации PACT, LSQ, APoT, AdaRound и QDrop.
+- [`int8_convertation.py`](int8_convertation.py) - утилиты для конвертации PACT-модели в real INT8 и CPU-бенчмарка.
 
 ## Установка
 
-Рекомендуется запускать проект из корня репозитория.
+Рекомендуется запускать проект из корня проекта ESPCN.
 
 ```bash
+cd ESPCN
 python -m venv .venv
 source .venv/bin/activate
-pip install torch torchvision torchmetrics lightning albumentations pillow numpy tqdm tensorboard jupyter
+pip install -r requirements.txt
 ```
 
 
 ## Данные
 
-По умолчанию код ожидает данные в `ESPCN/data`.
+По умолчанию код ожидает данные в `data`.
 
 ```text
-ESPCN/data/
+data/
 ├── DIV2K_train_HR/
 ├── DIV2K_valid_HR/
 ├── Set5/
@@ -48,8 +49,8 @@ ESPCN/data/
 Базовый FP32-эксперимент для `x2`:
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -57,12 +58,12 @@ python ESPCN/train.py \
   --experiment-name wo_quant_x2
 ```
 
-Логи и чекпоинты сохраняются в `ESPCN/runs/<experiment-name>/version_*/`. Лучший чекпоинт выбирается по `val/psnr`.
+Логи и чекпоинты сохраняются в `runs/<experiment-name>/version_*/`. Лучший чекпоинт выбирается по `val/psnr`.
 
 Для просмотра TensorBoard:
 
 ```bash
-tensorboard --logdir ESPCN/runs
+tensorboard --logdir runs
 ```
 
 ## Аргументы `train.py`
@@ -71,7 +72,7 @@ tensorboard --logdir ESPCN/runs
 
 | Аргумент | Описание | Значение по умолчанию |
 | --- | --- | --- |
-| `--data-root` | Путь к данным | `ESPCN/data` |
+| `--data-root` | Путь к данным | `data` |
 | `--scale` | Коэффициент super-resolution | `2`; варианты: `2`, `3`, `4` |
 | `--patch-size` | Размер LR-патча для обучения | `32` |
 | `--batch-size` | Batch size для обучения | `16` |
@@ -90,8 +91,8 @@ tensorboard --logdir ESPCN/runs
 ### 1. FP32 Baseline
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -102,8 +103,8 @@ python ESPCN/train.py \
 ### 2. PACT QAT
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -116,8 +117,8 @@ python ESPCN/train.py \
 Для signed-активаций:
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -131,8 +132,8 @@ python ESPCN/train.py \
 ### 3. LSQ QAT
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -144,11 +145,11 @@ python ESPCN/train.py \
 
 ### 4. APoT
 
-В репозитории есть реализация APoT-квантизатора в [`ESPCN/quantizations/apot.py`](ESPCN/quantizations/apot.py), а CLI содержит опцию `--quant-method apot`.
+В репозитории есть реализация APoT-квантизатора в [`quantizations/apot.py`](quantizations/apot.py), а CLI содержит опцию `--quant-method apot`.
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --epochs 150 \
   --batch-size 64 \
@@ -163,11 +164,11 @@ python ESPCN/train.py \
 AdaRound запускается поверх уже обученного FP32-чекпоинта. Сначала обучите baseline, затем передайте путь к лучшему чекпоинту:
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --quant-method adaround \
-  --checkpoint-path ESPCN/runs/wo_quant_x2/version_0/checkpoints/best-XX.ckpt \
+  --checkpoint-path runs/wo_quant_x2/version_0/checkpoints/best-XX.ckpt \
   --experiment-name adaround_x2
 ```
 
@@ -178,24 +179,24 @@ python ESPCN/train.py \
 QDrop также стартует с обученного чекпоинта:
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --quant-method qdrop \
-  --checkpoint-path ESPCN/runs/wo_quant_x2/version_0/checkpoints/best-XX.ckpt \
+  --checkpoint-path runs/wo_quant_x2/version_0/checkpoints/best-XX.ckpt \
   --experiment-name qdrop_x2
 ```
 
-В текущей реализации QDrop дообучается внутри [`train_q_drop`](ESPCN/quantizations/qdrop.py) на 150 эпохах с `lr=1e-5`.
+В текущей реализации QDrop дообучается внутри [`train_q_drop`](quantizations/qdrop.py) на 150 эпохах с `lr=1e-5`.
 
 ### 7. Тестирование Готового Чекпоинта
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 2 \
   --test-only \
-  --checkpoint-path ESPCN/runs/pact_w8a8_x2/version_0/checkpoints/best-XX.ckpt
+  --checkpoint-path runs/pact_w8a8_x2/version_0/checkpoints/best-XX.ckpt
 ```
 
 Скрипт печатает PSNR и SSIM отдельно для Set5 и Set14.
@@ -205,8 +206,8 @@ python ESPCN/train.py \
 Для `x3` или `x4` поменяйте `--scale` и имя эксперимента:
 
 ```bash
-python ESPCN/train.py \
-  --data-root ESPCN/data \
+python train.py \
+  --data-root data \
   --scale 4 \
   --epochs 150 \
   --batch-size 64 \
@@ -218,7 +219,7 @@ python ESPCN/train.py \
 
 ## Real INT8 И CPU-Бенчмарк
 
-[`ESPCN/int8_convertation.py`](ESPCN/int8_convertation.py) содержит функции для:
+[`int8_convertation.py`](int8_convertation.py) содержит функции для:
 
 - выгрузки PACT-модели в FP32-структуру;
 - подготовки `torch.ao.quantization` модели с `QuantStub`/`DeQuantStub`;
@@ -257,7 +258,7 @@ python ESPCN/train.py \
 .
 ├── README.md
 ├── ef_models.pdf
-└── ESPCN/
+└── 
     ├── data/
     ├── dataset.py
     ├── int8_convertation.py
