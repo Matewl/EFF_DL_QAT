@@ -13,3 +13,4 @@ val_loss
 *val psnr
 *val ssim
 draw_graphs.ipynb
+LSTM/.ipynb_checkpoints/
