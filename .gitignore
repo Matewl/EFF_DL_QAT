@@ -1,3 +1,9 @@
 *__pycache__*
 *tb_logs*
 ESPCN/data/
+runs
+.vscode
+ESPCN/ESPCN/runs
+ESPCN/lightning_logs
+ESPCN/int8_convertation.ipynb
+ESPCN/run_all.ipynb
