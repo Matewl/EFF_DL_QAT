@@ -1,0 +1,12 @@
+base_config: base.yaml
+experiment:
+  run_name: sasrec_fp32_low_dropout
+
+model:
+  dropout_rate: 0.1
+
+optimization:
+  lr: 0.0005
+
+quantization:
+  method: fp32

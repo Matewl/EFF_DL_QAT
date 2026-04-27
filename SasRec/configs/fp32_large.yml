@@ -1,0 +1,15 @@
+base_config: base.yaml
+experiment:
+  run_name: sasrec_fp32_large
+
+model:
+  hidden_units: 128
+  num_blocks: 4
+  num_heads: 2
+  dropout_rate: 0.2
+
+optimization:
+  lr: 0.0005
+
+quantization:
+  method: fp32

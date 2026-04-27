@@ -1,0 +1,12 @@
+base_config: base.yaml
+experiment:
+  run_name: sasrec_adaround_v2
+
+quantization:
+  method: adaround
+  bits: 8
+  per_channel: true
+  symmetric: true
+  rounding_iters: 3000
+  rounding_reg: 0.0001
+  base_checkpoint: ./checkpoints/sasrec_runs/sasrec_fp32/sasrec_fp32.pth
