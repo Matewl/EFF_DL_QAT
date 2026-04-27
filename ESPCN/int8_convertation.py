@@ -176,7 +176,7 @@ def parse_args():
     parser.add_argument("--scale", type=int, default=2, choices=[2, 3, 4])
     parser.add_argument("--patch-size", type=int, default=32)
     parser.add_argument("--best-path", type=Path)
-
+    return parser.parse_args() 
 
 def convert_and_compare():
     args = parse_args()
@@ -221,3 +221,6 @@ def convert_and_compare():
         print("PSNR drop:", fp32_quality["psnr"] - int8_quality["psnr"])
         print("SSIM drop:", fp32_quality["ssim"] - int8_quality["ssim"])
 
+
+if __name__ == "__main__":
+    convert_and_compare()

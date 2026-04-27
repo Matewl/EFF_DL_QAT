@@ -7,3 +7,9 @@ ESPCN/ESPCN/runs
 ESPCN/lightning_logs
 ESPCN/int8_convertation.ipynb
 ESPCN/run_all.ipynb
+*.png
+train_loss
+val_loss
+*val psnr
+*val ssim
+draw_graphs.ipynb
